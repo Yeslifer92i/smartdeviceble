@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">AndroidSmartDevice</string>
+    <string name="title_activity_scan_activity.kt">ScanActivity.kt</string>
+    <string name="title_activity_scan">ScanActivity</string>
+</resources>
