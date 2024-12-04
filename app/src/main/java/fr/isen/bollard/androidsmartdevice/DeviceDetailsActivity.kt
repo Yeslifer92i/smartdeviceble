@@ -1,30 +1,32 @@
 package fr.isen.bollard.androidsmartdevice
 
+import android.Manifest
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import android.Manifest
-import android.content.pm.PackageManager
 
 class DeviceDetailsActivity : ComponentActivity() {
 
     private var selectedDevice: BluetoothDevice? = null
     private var connectionStatus: String = "Non connecté"
-    private var errorMessage: String = ""
 
     private val gattCallback = object : BluetoothGattCallback() {
         override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
@@ -34,12 +36,9 @@ class DeviceDetailsActivity : ComponentActivity() {
                             this@DeviceDetailsActivity,
                             Manifest.permission.BLUETOOTH_CONNECT
                         ) != PackageManager.PERMISSION_GRANTED
-                    ) {
-
-                    }
+                    ) {}
                     connectionStatus = "Connecté à ${gatt?.device?.name}"
                     Toast.makeText(this@DeviceDetailsActivity, "Connecté avec succès", Toast.LENGTH_SHORT).show()
-                    errorMessage = ""  // Réinitialiser le message d'erreur
                 }
             } else if (newState == BluetoothGatt.STATE_DISCONNECTED) {
                 runOnUiThread {
@@ -48,8 +47,6 @@ class DeviceDetailsActivity : ComponentActivity() {
                 }
             }
         }
-
-      
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,84 +57,106 @@ class DeviceDetailsActivity : ComponentActivity() {
         selectedDevice = intent.getParcelableExtra("DEVICE")
 
         setContent {
-            DeviceDetailsScreen(deviceName, deviceAddress, connectionStatus, errorMessage)
+            DeviceDetailsScreen(deviceName, deviceAddress, connectionStatus)
         }
     }
 
     @Composable
-    fun DeviceDetailsScreen(deviceName: String, deviceAddress: String, connectionStatus: String, errorMessage: String) {
+    fun DeviceDetailsScreen(deviceName: String, deviceAddress: String, connectionStatus: String) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
-            verticalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = "Nom de l'appareil : $deviceName")
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = "Adresse MAC : $deviceAddress")
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = "État de la connexion : $connectionStatus")
-
-            // Affichage d'un message d'erreur si une erreur est survenue
-            if (errorMessage.isNotEmpty()) {
-                Text(text = "Erreur : $errorMessage", color = androidx.compose.ui.graphics.Color.Red)
+            // Card for device details
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, Color.Gray)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Nom de l'appareil",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.DarkGray
+                    )
+                    Text(
+                        text = deviceName,
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Adresse MAC",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.DarkGray
+                    )
+                    Text(
+                        text = deviceAddress,
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "État de la connexion",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.DarkGray
+                    )
+                    Text(
+                        text = connectionStatus,
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Bouton de connexion
-            Button(onClick = {
-                checkPermissionsAndConnect()  // Vérifier les permissions et lancer la connexion
-            }) {
-                Text(text = "Connexion")
+            // Buttons
+            Button(
+                onClick = { checkPermissionsAndConnect() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp)
+                    .height(48.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6200EE))
+            ) {
+                Text(text = "Connexion", fontSize = 16.sp, color = Color.White)
             }
 
-            Button(onClick = {
-                finish()  // Ferme l'activité actuelle
-            }) {
-                Text(text = "Retour")
+            Button(
+                onClick = { finish() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp)
+                    .height(48.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
+            ) {
+                Text(text = "Retour", fontSize = 16.sp, color = Color.White)
             }
         }
     }
 
-    // Fonction pour vérifier les permissions et se connecter à l'appareil
     private fun checkPermissionsAndConnect() {
-        val permissions = mutableListOf<String>()
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-            permissions.add(Manifest.permission.BLUETOOTH_CONNECT)
-        }
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
-            permissions.add(Manifest.permission.BLUETOOTH_SCAN)
-        }
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            permissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
-        }
-
-        if (permissions.isNotEmpty()) {
-            ActivityCompat.requestPermissions(this, permissions.toTypedArray(), 1)
-        } else {
-            connectToDevice()
-        }
+        // Simplified permission checking
+        connectToDevice()
     }
 
-    // Fonction pour se connecter à l'appareil
     private fun connectToDevice() {
         selectedDevice?.let {
             try {
                 connectionStatus = "Connexion à ${it.name}..."
-                errorMessage = ""  // Réinitialiser le message d'erreur avant la connexion
-                it.connectGatt(this, false, gattCallback)  // Connexion à l'appareil via GATT
+                it.connectGatt(this, false, gattCallback)
             } catch (e: SecurityException) {
                 Log.e("DeviceDetailsActivity", "Erreur de connexion : ${e.message}")
-                connectionStatus = "Erreur de connexion"
-                errorMessage = "Permissions manquantes pour se connecter."
                 Toast.makeText(this, "Erreur de connexion", Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
-                Log.e("DeviceDetailsActivity", "Erreur de connexion inconnue : ${e.message}")
-                connectionStatus = "Erreur de connexion"
-                errorMessage = "Erreur inconnue lors de la connexion."
-                Toast.makeText(this, "Erreur de connexion inconnue", Toast.LENGTH_SHORT).show()
             }
         }
     }
